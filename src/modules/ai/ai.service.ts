@@ -1,5 +1,33 @@
 import { prisma } from '../../config/db';
 
+// ─── Tipe AI Workout Eksternal ────────────────────────────────────────────────
+
+export interface ExternalWorkoutExercise {
+  name: string;
+  target: string;
+  muscle_group: string;
+  equipment: string;
+  sets: number;
+  reps: number;
+  rest_seconds: number;
+  progression_note: string;
+}
+
+export interface ExternalWorkoutDay {
+  date: string;             // YYYY-MM-DD
+  title: string;
+  focus_muscle: string | null;
+  status: 'pending' | 'completed' | 'cancelled';
+  exercises: ExternalWorkoutExercise[];
+}
+
+export interface ExternalWorkoutPlanResponse {
+  workout_plan: ExternalWorkoutDay[];
+  [key: string]: any;
+}
+
+// ─── Interfaces lama ─────────────────────────────────────────────────────────
+
 export interface WorkoutRecommendationParams {
   fitnessLevel: 'easy' | 'medium' | 'intermediate';
   fitnessGoal: 'lose' | 'gain' | 'healthy';
@@ -15,6 +43,112 @@ export interface MealRecommendationParams {
   fitnessGoal: 'lose' | 'gain' | 'healthy';
   fitnessLevel: 'easy' | 'medium' | 'intermediate';
 }
+
+// ─── Fungsi AI Workout Eksternal ──────────────────────────────────────────────
+
+const AI_WORKOUT_BASE_URL = 'https://smartgym-ai-workout.onrender.com';
+
+export interface CallExternalWorkoutAIParams {
+  fitnessLevel: 'easy' | 'medium' | 'intermediate';
+  fitnessGoal: 'lose' | 'gain' | 'healthy';
+  age?: number;
+  gender?: string;
+  weight?: number;
+  height?: number;
+  history: Array<{ focus_muscle: string; completed_at: string }>;
+  startDate?: string;
+}
+
+/**
+ * Memanggil AI Workout eksternal di Render dan mengembalikan workout_plan 7 hari.
+ */
+export async function callExternalWorkoutAI(
+  params: CallExternalWorkoutAIParams,
+): Promise<ExternalWorkoutPlanResponse> {
+  const { fitnessLevel, fitnessGoal, age, gender, weight, height, history, startDate } = params;
+
+  const body: Record<string, any> = {
+    user_profile: {
+      fitness_level: fitnessLevel,
+      fitness_goal: fitnessGoal,
+      ...(age !== undefined && { age }),
+      ...(gender !== undefined && { gender }),
+      ...(weight !== undefined && { weight }),
+      ...(height !== undefined && { height }),
+    },
+    history,
+    ...(startDate && { start_date: startDate }),
+  };
+
+  const res = await fetch(`${AI_WORKOUT_BASE_URL}/generate-workout-plan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(60_000), // 60 detik timeout (free tier bisa lambat)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`AI Workout eksternal error ${res.status}: ${errText}`);
+  }
+
+  return res.json() as Promise<ExternalWorkoutPlanResponse>;
+}
+
+/**
+ * Simpan workout_plan dari AI eksternal ke tabel schedules (bulk insert, skip hari Rest).
+ * Mengembalikan array schedule yang berhasil dibuat.
+ */
+export async function saveWorkoutPlanToSchedules(
+  userId: string,
+  workoutPlan: ExternalWorkoutDay[],
+) {
+  // Filter hanya hari yang bukan rest & punya focus_muscle
+  const trainingDays = workoutPlan.filter(
+    (day) => day.focus_muscle !== null && day.exercises.length > 0,
+  );
+
+  if (trainingDays.length === 0) return [];
+
+  // Cek duplikat — jangan insert kalau tanggal sudah ada schedule untuk user ini
+  const dates = trainingDays.map((d) => new Date(d.date));
+  const existingSchedules = await prisma.schedule.findMany({
+    where: {
+      userId,
+      scheduledDate: { in: dates },
+    },
+    select: { scheduledDate: true },
+  });
+
+  const existingDates = new Set(
+    existingSchedules.map((s) => s.scheduledDate.toISOString().split('T')[0]),
+  );
+
+  const newDays = trainingDays.filter((day) => !existingDates.has(day.date));
+
+  if (newDays.length === 0) return [];
+
+  // Bulk insert via transaction
+  const created = await prisma.$transaction(
+    newDays.map((day) =>
+      prisma.schedule.create({
+        data: {
+          userId,
+          title: day.title,
+          scheduledDate: new Date(day.date),
+          focusMuscle: day.focus_muscle!,
+          status: 'pending',
+          isAiGenerated: true,
+          aiNotes: `Dibuat otomatis oleh AI Workout. Latihan: ${day.exercises.map((e) => e.name).join(', ')}.`,
+        },
+      }),
+    ),
+  );
+
+  return created;
+}
+
+// ─── Fungsi lama (recommend-workout single day) ───────────────────────────────
 
 export async function generateWorkoutRecommendation(params: WorkoutRecommendationParams) {
   const { fitnessLevel, fitnessGoal, lastWorkoutFocus } = params;

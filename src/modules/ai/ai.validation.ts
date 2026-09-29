@@ -16,3 +16,12 @@ export const recommendMealSchema = z.object({
   fitness_level: z.enum(['easy', 'medium', 'intermediate']).optional(),
   workout_intensity: z.enum(['low', 'moderate', 'high']).optional(),
 });
+
+// Schema untuk endpoint generate-workout-plan (panggil AI eksternal)
+export const generateWorkoutPlanSchema = z.object({
+  start_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD')
+    .optional(),
+  save_to_schedule: z.boolean().optional().default(true),
+});

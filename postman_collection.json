@@ -680,6 +680,7 @@
     },
     {
       "name": "08. AI Recommendations (Adam & Bima Integration)",
+      "description": "Integrasi AI: rekomendasi fokus otot (1 hari), rekomendasi pola makan, dan generate jadwal latihan 7 hari dari AI Workout eksternal (https://smartgym-ai-workout.onrender.com).",
       "item": [
         {
           "name": "AI Recommendation: Focus Muscle & Schedule",
@@ -741,6 +742,80 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "ai", "recommend-meal"]
             }
+          }
+        },
+        {
+          "name": "AI Generate 7-Day Workout Plan (+ Auto-Save ke Schedules)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"2026-09-30\",\n  \"save_to_schedule\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/generate-workout-plan",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "generate-workout-plan"]
+            },
+            "description": "Panggil AI Workout eksternal (Render) untuk generate jadwal latihan 7 hari.\n\nProfile user (fitness_level, fitness_goal, age, gender, weight, height) diambil otomatis dari DB — wajib sudah isi profil dulu.\n\nHistori latihan 30 hari terakhir juga dikirim otomatis sebagai context AI untuk progression_note yang relevan.\n\nJika `save_to_schedule: true` (default), hari-hari latihan (non-rest) otomatis disimpan ke tabel schedules sebagai `is_ai_generated: true`. Duplikat tanggal di-skip.\n\nResponse: workout_plan (7 hari + detail exercises), saved_schedules_count, saved_schedules."
+          }
+        },
+        {
+          "name": "AI Generate 7-Day Workout Plan (Preview Only, Tidak Disimpan)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"save_to_schedule\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/generate-workout-plan",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "generate-workout-plan"]
+            },
+            "description": "Preview jadwal 7 hari tanpa menyimpan ke tabel schedules. `start_date` dikosongkan → AI pakai hari ini sebagai awal."
           }
         }
       ]
