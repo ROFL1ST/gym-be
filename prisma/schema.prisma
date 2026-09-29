@@ -1,0 +1,202 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------
+// ENUMS
+// -------------------------------------------------------------
+
+enum FitnessLevel {
+  easy
+  medium
+  intermediate
+
+  @@map("fitness_level_enum")
+}
+
+enum FitnessGoal {
+  lose
+  gain
+  healthy
+
+  @@map("fitness_goal")
+}
+
+enum ScheduleStatus {
+  pending
+  completed
+  cancelled
+
+  @@map("schedule_status_enum")
+}
+
+enum MealType {
+  breakfast
+  lunch
+  dinner
+  snack
+
+  @@map("meal_type_enum")
+}
+
+enum Gender {
+  male
+  female
+
+  @@map("gender_enum")
+}
+
+// -------------------------------------------------------------
+// MODELS
+// -------------------------------------------------------------
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  profile          UserProfile?
+  streak           UserStreak?
+  schedules        Schedule[]
+  workoutHistories WorkoutHistory[]
+  mealPlans        MealPlan[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id           String       @id @default(uuid()) @db.Uuid
+  userId       String       @unique @map("user_id") @db.Uuid
+  gender       Gender
+  age          Int
+  weight       Decimal      @db.Decimal(6, 2)
+  height       Decimal      @db.Decimal(6, 2)
+  fitnessLevel FitnessLevel @map("fitness_level")
+  fitnessGoal  FitnessGoal  @map("fitness_goal")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserStreak {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @unique @map("user_id") @db.Uuid
+  currentStreak    Int       @default(0) @map("current_streak")
+  lastActivityDate DateTime? @map("last_activity_date") @db.Date
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_streaks")
+}
+
+model Schedule {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @map("user_id") @db.Uuid
+  title         String         @db.VarChar(255)
+  scheduledDate DateTime       @map("scheduled_date") @db.Date
+  focusMuscle   String         @map("focus_muscle") @db.VarChar(100)
+  status        ScheduleStatus @default(pending)
+  isAiGenerated Boolean        @default(false) @map("is_ai_generated")
+  aiNotes       String?        @map("ai_notes") @db.Text
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workoutHistories WorkoutHistory[]
+
+  @@index([userId, scheduledDate])
+  @@map("schedules")
+}
+
+model WorkoutHistory {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @map("user_id") @db.Uuid
+  scheduleId      String?   @map("schedule_id") @db.Uuid
+  focusMuscle     String    @map("focus_muscle") @db.VarChar(100)
+  durationMinutes Int       @map("duration_minutes")
+  notes           String?   @db.Text
+  completedAt     DateTime  @default(now()) @map("completed_at")
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  schedule Schedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  @@index([userId, completedAt])
+  @@map("workout_histories")
+}
+
+model MealPlan {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  date           DateTime  @db.Date
+  mealType       MealType  @map("meal_type")
+  targetCalories Int       @map("target_calories")
+  isAiGenerated  Boolean   @default(false) @map("is_ai_generated")
+  aiNotes        String?   @map("ai_notes") @db.Text
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  details MealPlanDetail[]
+
+  @@index([userId, date])
+  @@map("meal_plans")
+}
+
+model MealPlanDetail {
+  id                 String   @id @default(uuid()) @db.Uuid
+  mealPlanId         String   @map("meal_plan_id") @db.Uuid
+  foodId             String?  @map("food_id") @db.Uuid
+  foodNameCustom     String?  @map("food_name_custom") @db.VarChar(255)
+  portionG           Decimal  @map("portion_g") @db.Decimal(8, 2)
+  calculatedCalories Decimal  @map("calculated_calories") @db.Decimal(8, 2)
+  calculatedProtein  Decimal  @map("calculated_protein") @db.Decimal(8, 2)
+  calculatedCarbs    Decimal  @map("calculated_carbs") @db.Decimal(8, 2)
+  calculatedFat      Decimal  @map("calculated_fat") @db.Decimal(8, 2)
+  calculatedSugar    Decimal  @map("calculated_sugar") @db.Decimal(8, 2)
+  calculatedFiber    Decimal  @map("calculated_fiber") @db.Decimal(8, 2)
+
+  // Relations
+  mealPlan MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+  food     Food?    @relation(fields: [foodId], references: [id], onDelete: SetNull)
+
+  @@index([mealPlanId])
+  @@map("meal_plan_details")
+}
+
+model Food {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(255)
+  category     String   @db.VarChar(100)
+  servingSizeG Decimal  @map("serving_size_g") @db.Decimal(8, 2)
+  calories     Decimal  @db.Decimal(8, 2)
+  proteinG     Decimal  @map("protein_g") @db.Decimal(8, 2)
+  carbsG       Decimal  @map("carbs_g") @db.Decimal(8, 2)
+  fatG         Decimal  @map("fat_g") @db.Decimal(8, 2)
+  sugarG       Decimal  @map("sugar_g") @db.Decimal(8, 2)
+  fiberG       Decimal  @map("fiber_g") @db.Decimal(8, 2)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  mealPlanDetails MealPlanDetail[]
+
+  @@map("foods")
+}

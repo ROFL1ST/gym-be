@@ -1,0 +1,749 @@
+{
+  "info": {
+    "_postman_id": "smart-gym-api-collection-2026",
+    "name": "Smart Gym API Collection",
+    "description": "Postman Collection untuk Backend Smart Gym (Lomba Kompress / Hackathon 2026).\nMendukung alur Auth (auto-save JWT), Profil, Penjadwalan, Histori Latihan, Pola Makan/Kalori, Master Makanan, dan Rekomendasi AI.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00. Health & Info",
+      "item": [
+        {
+          "name": "Root Welcome",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            }
+          }
+        },
+        {
+          "name": "Health Check (DB & Server)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01. Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Danendra Gymnast\",\n  \"email\": \"danendra@gym.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login (Auto Save Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set(\"authToken\", jsonData.token);",
+                  "    console.log(\"Saved authToken to collection variables!\");",
+                  "} else if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set(\"authToken\", jsonData.data.token);",
+                  "    console.log(\"Saved authToken from data.token!\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"danendra@gym.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User (Me)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. User Profile",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Upsert / Update Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gender\": \"male\",\n  \"age\": 21,\n  \"weight\": 72.5,\n  \"height\": 175.0,\n  \"fitness_level\": \"medium\",\n  \"fitness_goal\": \"gain\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Dashboard & Streaks",
+      "item": [
+        {
+          "name": "Get Dashboard Summary",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Get Streak Info",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/streaks",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "streaks"]
+            }
+          }
+        },
+        {
+          "name": "Record Daily Streak Check-in",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/streaks/check-in",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "streaks", "check-in"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Schedules (Penjadwalan)",
+      "item": [
+        {
+          "name": "List Schedules (Filter Date Range)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedules?start_date=2026-09-01&end_date=2026-09-30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedules"],
+              "query": [
+                {
+                  "key": "start_date",
+                  "value": "2026-09-01"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2026-09-30"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Schedule (Manual)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Push Day Workout\",\n  \"scheduled_date\": \"2026-09-26\",\n  \"focus_muscle\": \"Chest & Triceps\",\n  \"status\": \"pending\",\n  \"is_ai_generated\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/schedules",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedules"]
+            }
+          }
+        },
+        {
+          "name": "Update Schedule Status",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/schedules/:scheduleId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedules", ":scheduleId"],
+              "variable": [
+                {
+                  "key": "scheduleId",
+                  "value": "replace-with-schedule-uuid"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Schedule",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/schedules/:scheduleId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "schedules", ":scheduleId"],
+              "variable": [
+                {
+                  "key": "scheduleId",
+                  "value": "replace-with-schedule-uuid"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Workout Histories (Histori Latihan)",
+      "item": [
+        {
+          "name": "List Workout Histories",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/workouts/histories?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workouts", "histories"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Record Workout Completed",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"schedule_id\": null,\n  \"focus_muscle\": \"Back & Biceps\",\n  \"duration_minutes\": 60,\n  \"notes\": \"Latihan pull-up 4 set dan lat pulldown dengan beban progresif 50kg.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/workouts/histories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "workouts", "histories"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Meal Plans (Pola Makan & Nutrisi)",
+      "item": [
+        {
+          "name": "Get Meal Plans by Date",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/meals?date=2026-09-26",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meals"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-09-26"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Meal Plan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-09-26\",\n  \"meal_type\": \"breakfast\",\n  \"target_calories\": 650,\n  \"is_ai_generated\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/meals",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meals"]
+            }
+          }
+        },
+        {
+          "name": "Add Food Item to Meal Plan",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"food_id\": \"replace-with-food-uuid\",\n  \"portion_g\": 150,\n  \"calculated_calories\": 247.5,\n  \"calculated_protein\": 46.5,\n  \"calculated_carbs\": 0.0,\n  \"calculated_fat\": 5.4,\n  \"calculated_sugar\": 0.0,\n  \"calculated_fiber\": 0.0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/meals/:mealPlanId/details",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meals", ":mealPlanId", "details"],
+              "variable": [
+                {
+                  "key": "mealPlanId",
+                  "value": "replace-with-meal-plan-uuid"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Custom Food to Meal Plan (Tanpa Master Food)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"food_name_custom\": \"Gado-Gado Tanpa Lontong\",\n  \"portion_g\": 200,\n  \"calculated_calories\": 312,\n  \"calculated_protein\": 14.5,\n  \"calculated_carbs\": 22.0,\n  \"calculated_fat\": 18.0,\n  \"calculated_sugar\": 6.0,\n  \"calculated_fiber\": 5.0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/meals/:mealPlanId/details",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "meals", ":mealPlanId", "details"],
+              "variable": [
+                {
+                  "key": "mealPlanId",
+                  "value": "replace-with-meal-plan-uuid"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Foods Master Data",
+      "item": [
+        {
+          "name": "Search / List Foods",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/foods?search=ayam&category=Protein",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "foods"],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "ayam"
+                },
+                {
+                  "key": "category",
+                  "value": "Protein"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Food by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/foods/:foodId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "foods", ":foodId"],
+              "variable": [
+                {
+                  "key": "foodId",
+                  "value": "replace-with-food-uuid"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create New Master Food (Admin / Seeder)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dada Kalkun Panggang\",\n  \"category\": \"Protein\",\n  \"serving_size_g\": 100,\n  \"calories\": 135,\n  \"protein_g\": 30.0,\n  \"carbs_g\": 0.0,\n  \"fat_g\": 1.0,\n  \"sugar_g\": 0.0,\n  \"fiber_g\": 0.0\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/foods",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "foods"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. AI Recommendations (Adam & Bima Integration)",
+      "item": [
+        {
+          "name": "AI Recommendation: Focus Muscle & Schedule",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fitness_level\": \"medium\",\n  \"fitness_goal\": \"gain\",\n  \"last_workout_focus\": \"Chest & Triceps\",\n  \"target_date\": \"2026-09-27\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/recommend-workout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "recommend-workout"]
+            }
+          }
+        },
+        {
+          "name": "AI Recommendation: Pola Makan & Kalori",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"weight\": 72.5,\n  \"height\": 175,\n  \"age\": 21,\n  \"gender\": \"male\",\n  \"fitness_goal\": \"gain\",\n  \"fitness_level\": \"medium\",\n  \"workout_intensity\": \"high\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/ai/recommend-meal",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "ai", "recommend-meal"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
