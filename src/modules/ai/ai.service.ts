@@ -22,7 +22,9 @@ export interface ExternalWorkoutDay {
 }
 
 export interface ExternalWorkoutPlanResponse {
-  workout_plan: ExternalWorkoutDay[];
+  week_start?: string;
+  days?: ExternalWorkoutDay[];
+  workout_plan?: ExternalWorkoutDay[]; // fallback jika API berubah
   [key: string]: any;
 }
 

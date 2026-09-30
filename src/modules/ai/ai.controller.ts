@@ -148,7 +148,7 @@ export async function generateWorkoutPlan(req: Request, res: Response) {
       startDate: start_date,
     });
 
-    const workoutPlan = aiResponse.workout_plan ?? [];
+    const workoutPlan = aiResponse.days ?? aiResponse.workout_plan ?? [];
 
     // 4. Simpan ke schedules jika diminta
     let savedSchedules: any[] = [];
